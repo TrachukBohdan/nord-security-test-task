@@ -2,45 +2,111 @@
 
 namespace App\Tests\Unit;
 
-use App\Entity\Item;
 use App\Entity\User;
+use App\Repository\UserRepositoryInterface;
 use App\Service\ItemService;
+use App\Service\ItemServiceInterface;
 use PHPUnit\Framework\TestCase;
-use Doctrine\ORM\EntityManagerInterface;
-use PHPUnit\Framework\MockObject\MockObject;
+use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 
 class ItemServiceTest extends TestCase
 {
     /**
-     * @var EntityManagerInterface|MockObject
+     * @var UserRepositoryInterface
      */
-    private $entityManager;
+    private $userRepository;
 
     /**
-     * @var ItemService
+     * @var UserPasswordEncoderInterface
+     */
+    private $passwordEncoder;
+
+    /**
+     * @var ItemServiceInterface
      */
     private $itemService;
 
+    /**
+     * @var User
+     */
+    private $user;
+
     public function setUp(): void
     {
-        /** @var EntityManagerInterface */
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        
-        $this->itemService = new ItemService($this->entityManager);
+        $this->userRepository = $this->createMock(UserRepositoryInterface::class);
+        $this->passwordEncoder = $this->createMock(UserPasswordEncoderInterface::class);
+        $this->user = $this->createMock(User::class);
+        $this->itemService = new ItemService($this->userRepository, $this->passwordEncoder);
     }
 
     public function testCreate(): void
     {
-        /** @var User */
-        $user = $this->createMock(User::class);
-        $data = 'secret data';
+        $userId = 1;
+        $itemData = 'securet data';
 
-        $expectedObject = new Item();
-        $expectedObject->setData($data);
-        $expectedObject->setUser($user);
+        $this->user
+            ->expects($this->once())
+            ->method('addItem')
+            ->with($itemData);
 
-        $this->entityManager->expects($this->once())->method('persist')->with($expectedObject);
+        $this->userRepository
+            ->expects($this->once())
+            ->method('getById')
+            ->with($userId)
+            ->willReturn($this->user);
 
-        $this->itemService->create($user, $data);
+        $this->userRepository
+            ->expects($this->once())
+            ->method('save')
+            ->with($this->user);
+
+        $this->itemService->create(1, $itemData);
+    }
+    public function testUpdate(): void
+    {
+        $userId = 1;
+        $itemId = 2;
+        $itemData = 'securet data';
+
+        $this->user
+            ->expects($this->once())
+            ->method('updateItem')
+            ->with($itemId, $itemData);
+
+        $this->userRepository
+            ->expects($this->once())
+            ->method('getById')
+            ->with($userId)
+            ->willReturn($this->user);
+
+        $this->userRepository
+            ->expects($this->once())
+            ->method('save')
+            ->with($this->user);
+
+        $this->itemService->update($userId, $itemId, $itemData);
+    }
+
+    public function testRemove(): void
+    {
+        $userId = 1;
+        $itemId = 2;
+        $this->user
+            ->expects($this->once())
+            ->method('removeItem')
+            ->with($itemId);
+
+        $this->userRepository
+            ->expects($this->once())
+            ->method('getById')
+            ->with($userId)
+            ->willReturn($this->user);
+
+        $this->userRepository
+            ->expects($this->once())
+            ->method('save')
+            ->with($this->user);
+
+        $this->itemService->remove($userId, $itemId);
     }
 }
