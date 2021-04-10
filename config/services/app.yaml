@@ -1,0 +1,21 @@
+services:
+
+  App\Repository\UserRepository:
+    factory: ['@doctrine.orm.default_entity_manager', getRepository]
+    arguments: [App\Entity\User]
+    class: App\Repository\UserRepository
+
+  App\Repository\ItemRepository:
+    factory: [ '@doctrine.orm.default_entity_manager', getRepository ]
+    arguments: [ App\Entity\Item ]
+    class: App\Repository\ItemRepository
+
+  App\Service\ItemService:
+    arguments:
+      - '@App\Repository\UserRepository'
+      - '@Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface'
+
+  App\Repository\UserRepositoryInterface: '@App\Repository\UserRepository'
+  App\Repository\ItemRepositoryInterface: '@App\Repository\ItemRepository'
+  App\Service\ItemServiceInterface: '@App\Service\ItemService'
+

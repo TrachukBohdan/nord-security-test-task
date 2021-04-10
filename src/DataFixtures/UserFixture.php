@@ -2,7 +2,6 @@
 
 namespace App\DataFixtures;
 
-use App\Entity\Token;
 use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
@@ -20,12 +19,8 @@ class UserFixture extends Fixture
 
     public function load(ObjectManager $manager)
     {
-        $user = new User();
-        $user->setUsername('john');
-        $user->setPassword($this->encoder->encodePassword($user, 'maxsecure'));
-
+        $user = User::createFromCredentials('john', 'maxsecure', $this->encoder);
         $manager->persist($user);
-         
         $manager->flush();
     }
 }

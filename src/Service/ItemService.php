@@ -2,33 +2,47 @@
 
 namespace App\Service;
 
-use App\Entity\Item;
-use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\UserRepositoryInterface;
+use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 
-class ItemService
+class ItemService implements ItemServiceInterface
 {
-    private $entityManager;
+    /**
+     * @var UserRepositoryInterface
+     */
+    private $userRepository;
 
-    public function __construct(EntityManagerInterface $entityManager)
-    {
-        $this->entityManager = $entityManager;
+    /**
+     * @var UserPasswordEncoderInterface
+     */
+    private $userPasswordEncoder;
+
+    public function __construct(
+        UserRepositoryInterface $userRepository,
+        UserPasswordEncoderInterface $userPasswordEncoder
+    ) {
+        $this->userRepository = $userRepository;
+        $this->userPasswordEncoder = $userPasswordEncoder;
     }
 
-    public function create(User $user, string $data): void
+    public function create(int $userId, string $data): void
     {
-        $item = new Item();
-        $item->setUser($user);
-        $item->setData($data);
-
-        $this->entityManager->persist($item);
-        $this->entityManager->flush();
+        $user = $this->userRepository->getById($userId);
+        $user->addItem($data);
+        $this->userRepository->save($user);
     }
 
-    public function update(Item $item, string $data): void
+    public function update(int $userId, int $itemId, string $data): void
     {
-        $item->setData($data);
-        $this->entityManager->persist($item);
-        $this->entityManager->flush();
+        $user = $this->userRepository->getById($userId);
+        $user->updateItem($itemId, $data);
+        $this->userRepository->save($user);
+    }
+
+    public function remove(int $userId, int $itemId): void
+    {
+        $user = $this->userRepository->getById($userId);
+        $user->removeItem($itemId);
+        $this->userRepository->save($user);
     }
 } 

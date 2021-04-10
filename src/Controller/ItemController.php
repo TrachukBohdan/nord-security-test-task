@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\Item;
+use App\Controller\DataAdapter\ItemToArrayAdapter;
+use App\Exception\ItemNotFoundException;
+use App\Exception\UserNotFoundException;
+use App\Repository\ItemRepositoryInterface;
+use App\Repository\UserRepositoryInterface;
 use App\Service\ItemService;
-use Riverline\MultiPartParser\Converters\Globals;
-use Riverline\MultiPartParser\StreamedPart;
+use App\Service\ItemServiceInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class ItemController extends AbstractController
 {
@@ -21,80 +25,107 @@ class ItemController extends AbstractController
      * @Route("/item", name="item_list", methods={"GET"})
      * @IsGranted("ROLE_USER")
      */
-    public function list(): JsonResponse
+    public function list(
+        UserRepositoryInterface $userRepository,
+        ItemRepositoryInterface $itemRepository,
+        ItemToArrayAdapter $itemToArrayAdapter
+    ): JsonResponse
     {
-        $items = $this->getDoctrine()->getRepository(Item::class)->findBy(['user' => $this->getUser()]);
-
-        $allItems = [];
-        foreach ($items as $item) {
-            $oneItem['id'] = $item->getId();
-            $oneItem['data'] = $item->getData();
-            $oneItem['created_at'] = $item->getCreatedAt();
-            $oneItem['updated_at'] = $item->getUpdatedAt();
-            $allItems[] = $oneItem;
-        }
-
-        return $this->json($allItems);
+       try {
+            $user = $userRepository->getByUsername($this->getUser()->getUsername());
+            $items = $itemRepository->findAllItems($user);
+            return $this->json($itemToArrayAdapter->transformItems($items));
+       } catch (UserNotFoundException $userNotFoundException) {
+           return $this->json(['error' => 'user not found'], Response::HTTP_INTERNAL_SERVER_ERROR);
+       } catch (\Throwable $exception) {
+           return $this->json(['error' => 'failed'], Response::HTTP_INTERNAL_SERVER_ERROR);
+       }
     }
 
     /**
      * @Route("/item", name="item_create", methods={"POST"})
      * @IsGranted("ROLE_USER")
      */
-    public function create(Request $request, ItemService $itemService)
-    {
-//        dump($request->getContentType());die;
-
+    public function create(
+        Request $request,
+        UserRepositoryInterface $userRepository,
+        ItemServiceInterface $itemService
+    ) {
         $data = $request->get('data');
 
         if (empty($data)) {
             return $this->json(['error' => 'No data parameter']);
         }
 
-        $itemService->create($this->getUser(), $data);
-
-        return $this->json([]);
+        try {
+            $user = $userRepository->getByUsername($this->getUser()->getUsername());
+            $itemService->create($user->id(), (string) $data);
+            return $this->json([]);
+        } catch (UserNotFoundException $userNotFoundException) {
+            return $this->json(['error' => 'user not found'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (Throwable $exception) {
+            return $this->json(['error' => 'failed'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
      * @Route("/item", name="item_update", methods={"PUT"})
      * @IsGranted("ROLE_USER")
      */
-    public function update(Request $request, ItemService $itemService)
-    {
-        $id = $request->get('id');
-        $data = $request->get('data');
-
-        $item = $this->getDoctrine()->getRepository(Item::class)->find($id);
-
-        if ($item === null) {
-            return $this->json(['error' => 'item not found'], Response::HTTP_BAD_REQUEST);
+    public function update(
+        Request $request,
+        UserRepositoryInterface $userRepository,
+        ItemService $itemService
+    ) {
+        if (empty($request->get('data'))) {
+            return $this->json(['error' => 'No data parameter']);
         }
 
-        $itemService->update($item, $data);
-        return $this->json([]);
+        if (empty($request->get('id'))) {
+            return $this->json(['error' => 'No id parameter']);
+        }
+
+        try {
+            $user = $userRepository->getByUsername($this->getUser()->getUsername());
+            $itemService->update(
+                $user->id(),
+                (int) $request->get('id'),
+                (string) $request->get('data')
+            );
+            return $this->json([]);
+        } catch (UserNotFoundException $userNotFoundException) {
+            return $this->json(['error' => 'user not found'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (ItemNotFoundException $itemNotFoundException) {
+            return $this->json(['error' => 'item not found'], Response::HTTP_BAD_REQUEST);
+        } catch (Throwable $throwable) {
+            return $this->json(['error' => 'failed'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
     }
 
     /**
      * @Route("/item/{id}", name="items_delete", methods={"DELETE"})
      * @IsGranted("ROLE_USER")
      */
-    public function delete(Request $request, int $id)
-    {
+    public function delete(
+        UserRepositoryInterface $userRepository,
+        ItemServiceInterface $itemService,
+        int $id
+    ) {
         if (empty($id)) {
             return $this->json(['error' => 'No data parameter'], Response::HTTP_BAD_REQUEST);
         }
 
-        $item = $this->getDoctrine()->getRepository(Item::class)->find($id);
-
-        if ($item === null) {
-            return $this->json(['error' => 'No item'], Response::HTTP_BAD_REQUEST);
+        try {
+            $user = $userRepository->getByUsername($this->getUser()->getUsername());
+            $itemService->remove($user->id(), (int) $id);
+            return $this->json([]);
+        } catch (UserNotFoundException $userNotFoundException) {
+            return $this->json(['error' => 'user not found'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (ItemNotFoundException $itemNotFoundException) {
+            return $this->json(['error' => 'no item'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (Throwable $throwable) {
+            return $this->json(['error' => 'failed'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        $manager = $this->getDoctrine()->getManager();
-        $manager->remove($item);
-        $manager->flush();
-
-        return $this->json([]);
     }
 }

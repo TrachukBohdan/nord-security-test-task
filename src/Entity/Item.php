@@ -2,121 +2,76 @@
 
 namespace App\Entity;
 
-use DateTime;
 use DateTimeInterface;
-use Doctrine\ORM\Mapping as ORM;
-use App\Repository\ItemRepository;
+use DateTimeImmutable;
 
-/**
- * @ORM\Entity(repositoryClass=ItemRepository::class)
- * @ORM\HasLifecycleCallbacks
- */
 class Item
 {
     /**
-     * @ORM\Id()
-     * @ORM\GeneratedValue()
-     * @ORM\Column(type="integer")
+     * @var int|null
      */
     private $id;
 
     /**
-     * @ORM\Column(type="text")
+     * @var string
      */
     private $data;
 
     /**
-     * @ORM\Column(type="datetime")
+     * @var DateTimeInterface
      */
     private $createdAt;
 
     /**
-     * @ORM\Column(type="datetime")
+     * @var DateTimeInterface
      */
     private $updatedAt;
 
     /**
-     * @ORM\ManyToOne(targetEntity=User::class, inversedBy="items")
-     * @ORM\JoinColumn(nullable=false)
+     * @var User
      */
     private $user;
 
-    public function getId(): ?int
+    private function __construct() {}
+
+    public static function createFromData(User $user, string $data): self
+    {
+        $item = new Item();
+        $item->user = $user;
+        $item->data = $data;
+        $item->createdAt = new DateTimeImmutable('now');
+        $item->updatedAt = new DateTimeImmutable('now');
+        return $item;
+    }
+
+    public function id(): ?int
     {
         return $this->id;
     }
 
-    public function getData(): ?string
+    public function data(): ?string
     {
         return $this->data;
     }
 
-    public function setData(string $data): self
-    {
-        $this->data = $data;
-
-        return $this;
-    }
-
-    public function getCreatedAt(): ?DateTimeInterface
-    {
-        return $this->createdAt;
-    }
-
-    public function setCreatedAt(DateTimeInterface $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
-    public function getUpdatedAt(): ?DateTimeInterface
-    {
-        return $this->updatedAt;
-    }
-
-    public function setUpdatedAt(DateTimeInterface $updatedAt): self
-    {
-        $this->updatedAt = $updatedAt;
-
-        return $this;
-    }
-
-    /**
-     * @ORM\PrePersist
-     */
-    public function updateTimestampsOnPersist(): void
-    {
-        if (null === $this->getUpdatedAt()) {
-            $this->setUpdatedAt(new DateTime('now'));
-        }
-
-        if (null === $this->getCreatedAt()) {
-            $this->setCreatedAt(new DateTime('now'));
-        }
-    }
-
-    /**
-     * @ORM\PreUpdate
-     */
-    public function updatedTimestampsOnUpdate(): void
-    {
-        $this->setUpdatedAt(new DateTime('now'));
-
-        if (null === $this->getCreatedAt()) {
-            $this->setCreatedAt(new DateTime('now'));
-        }
-    }
-
-    public function getUser(): ?User
+    public function user(): User
     {
         return $this->user;
     }
 
-    public function setUser(?User $user): self
+    public function changeData(string $data): void
     {
-        $this->user = $user;
+        $this->data = $data;
+        $this->updatedAt = new DateTimeImmutable('now');
+    }
 
-        return $this;
+    public function createdAt(): DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function updatedAt(): ?DateTimeInterface
+    {
+        return $this->updatedAt;
     }
 }

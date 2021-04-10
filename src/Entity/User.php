@@ -2,165 +2,140 @@
 
 namespace App\Entity;
 
+use App\Exception\ItemNotFoundException;
 use DateTime;
+use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
-use App\Repository\UserRepository;
+use Doctrine\Common\Collections\Criteria;
+use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
-/**
- * @ORM\Entity(repositoryClass=UserRepository::class)
- * @ORM\HasLifecycleCallbacks
- */
 class User implements UserInterface
 {
+    use UserTrait;
+
     /**
-     * @ORM\Id()
-     * @ORM\GeneratedValue()
-     * @ORM\Column(type="integer")
+     * @var int|null
      */
     private $id;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @var string
      */
     private $username;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @var string
      */
     private $password;
 
     /**
-     * @ORM\Column(type="datetime")
+     * @var DateTime
      */
     private $createdAt;
 
     /**
-     * @ORM\Column(type="datetime")
+     * @var DateTime|null
      */
     private $updatedAt;
 
     /**
-     * @ORM\OneToMany(targetEntity=Item::class, mappedBy="user", orphanRemoval=true)
+     * @var ArrayCollection
      */
     private $items;
 
-    public function __construct()
-    {
-        $this->items = new ArrayCollection();
+    public static function createFromCredentials(
+        string $username,
+        string $password,
+        UserPasswordEncoderInterface $userPasswordEncoder
+    ): self {
+        $user = new User();
+        $user->username = $username;
+        $user->items = new ArrayCollection();
+        $user->createdAt = new DateTimeImmutable('now');
+        $user->updatedAt = new DateTimeImmutable('now');
+        $user->changePassword($password, $userPasswordEncoder);
+        return $user;
     }
 
-    public function getId(): ?int
+    public function id(): ?int
     {
         return $this->id;
     }
 
-    public function getUsername(): ?string
+    public function username(): string
     {
         return $this->username;
     }
 
-    public function setUsername(string $username): self
+    public function changeUsername(string $username)
     {
         $this->username = $username;
-
-        return $this;
     }
 
-    public function getCreatedAt(): ?DateTimeInterface
+    public function createdAt(): DateTimeInterface
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(DateTimeInterface $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
-    public function getUpdatedAt(): ?DateTimeInterface
+    public function updatedAt(): ?DateTimeInterface
     {
         return $this->updatedAt;
     }
 
-    public function setUpdatedAt(DateTimeInterface $updatedAt): self
+    public function changePassword(string $password, UserPasswordEncoderInterface $userPasswordEncoder): void
     {
-        $this->updatedAt = $updatedAt;
-
-        return $this;
-    }
-
-    /**
-     * @ORM\PrePersist
-     */
-    public function updateTimestampsOnPersist(): void
-    {
-        if (null === $this->getUpdatedAt()) {
-            $this->setUpdatedAt(new DateTime('now'));
-        }
-
-        if (null === $this->getCreatedAt()) {
-            $this->setCreatedAt(new DateTime('now'));
-        }
-    }
-
-    /**
-     * @ORM\PreUpdate
-     */
-    public function updatedTimestampsOnUpdate(): void
-    {
-        $this->setUpdatedAt(new DateTime('now'));
-
-        if (null === $this->getCreatedAt()) {
-            $this->setCreatedAt(new DateTime('now'));
-        }
-    }
-
-    public function setPassword(string $password): self
-    {
-        $this->password = $password;
-
-        return $this;
-    }
-
-    public function getPassword(): string
-    {
-        return $this->password;
-    }
-
-    public function getRoles(): array
-    {
-        return ['ROLE_USER'];
-    }
-
-    public function eraseCredentials(): void
-    {
-    }
-
-    public function getSalt(): ?string
-    {
-        return null;
+        $this->password = $userPasswordEncoder->encodePassword($this, $password);
     }
 
     /**
      * @return Collection|Item[]
      */
-    public function getItems(): Collection
+    public function items(): Collection
     {
         return $this->items;
     }
 
-    public function addItem(Item $item): self
+    public function addItem(string $itemData): void
     {
-        if (!$this->items->contains($item)) {
-            $this->items[] = $item;
-            $item->setUser($this);
+        $criteria = new Criteria();
+        $criteria->andWhere(Criteria::expr()->eq('data', $itemData));
+
+        if ($this->items()->matching($criteria)->isEmpty()) {
+            $this->items()->add(Item::createFromData($this, $itemData));
+            $this->updatedAt = new DateTimeImmutable('now');
+        }
+    }
+
+    public function updateItem(int $id, string $data): void
+    {
+        $criteria = new Criteria();
+        $criteria->andWhere(Criteria::expr()->eq('id', $id));
+        $items = $this->items()->matching($criteria);
+
+        foreach($items as $item) {
+            $item->changeData($data);
+            $this->updatedAt = new DateTimeImmutable('now');
+            return;
         }
 
-        return $this;
+        throw new ItemNotFoundException();
+    }
+
+    public function removeItem(int $id): void
+    {
+        $criteria = new Criteria();
+        $criteria->andWhere(Criteria::expr()->eq('id', $id));
+        $items = $this->items()->matching($criteria);
+
+        foreach($items as $item) {
+            $this->items()->removeElement($item);
+            $this->updatedAt = new DateTimeImmutable('now');
+            return;
+        }
+
+        throw new ItemNotFoundException();
     }
 }
