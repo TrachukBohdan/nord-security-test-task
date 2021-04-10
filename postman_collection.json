@@ -1,0 +1,132 @@
+{
+	"variables": [],
+	"info": {
+		"name": "PHP test",
+		"_postman_id": "9e723e17-4148-2eac-a1f3-e39796eceb95",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Login",
+			"request": {
+				"url": "http://secure-storage.localhost:8000/login",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"john\",\n    \"password\": \"maxsecure\"\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Logout",
+			"request": {
+				"url": "http://secure-storage.localhost:8000/logout",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"john\",\n    \"password\": \"maxsecure\"\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Get Items",
+			"request": {
+				"url": "http://secure-storage.localhost:8000/item",
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Create Item",
+			"request": {
+				"url": "http://secure-storage.localhost:8000/item",
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "data",
+							"value": "new item secret",
+							"type": "text"
+						}
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Update Item",
+			"request": {
+				"url": "http://secure-storage.localhost:8000/item",
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "id",
+							"value": "1",
+							"description": "",
+							"type": "text"
+						},
+						{
+							"key": "data",
+							"value": "secure data",
+							"description": "",
+							"type": "text"
+						}
+					]
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Item",
+			"request": {
+				"url": "http://secure-storage.localhost:8000/item/1",
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
