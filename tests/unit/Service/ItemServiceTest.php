@@ -4,6 +4,7 @@ namespace App\Tests\Unit;
 
 use App\Entity\User;
 use App\Repository\UserRepositoryInterface;
+use App\Service\HashServiceInterface;
 use App\Service\ItemService;
 use App\Service\ItemServiceInterface;
 use PHPUnit\Framework\TestCase;
@@ -27,6 +28,11 @@ class ItemServiceTest extends TestCase
     private $itemService;
 
     /**
+     * @var HashServiceInterface
+     */
+    private $hashService;
+
+    /**
      * @var User
      */
     private $user;
@@ -35,8 +41,13 @@ class ItemServiceTest extends TestCase
     {
         $this->userRepository = $this->createMock(UserRepositoryInterface::class);
         $this->passwordEncoder = $this->createMock(UserPasswordEncoderInterface::class);
+        $this->hashService = $this->createMock(HashServiceInterface::class);
         $this->user = $this->createMock(User::class);
-        $this->itemService = new ItemService($this->userRepository, $this->passwordEncoder);
+        $this->itemService = new ItemService(
+            $this->userRepository,
+            $this->passwordEncoder,
+            $this->hashService
+        );
     }
 
     public function testCreate(): void
@@ -47,7 +58,7 @@ class ItemServiceTest extends TestCase
         $this->user
             ->expects($this->once())
             ->method('addItem')
-            ->with($itemData);
+            ->with($itemData, $this->hashService);
 
         $this->userRepository
             ->expects($this->once())
@@ -71,7 +82,7 @@ class ItemServiceTest extends TestCase
         $this->user
             ->expects($this->once())
             ->method('updateItem')
-            ->with($itemId, $itemData);
+            ->with($itemId, $itemData, $this->hashService);
 
         $this->userRepository
             ->expects($this->once())

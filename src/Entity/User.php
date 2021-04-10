@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Exception\ItemNotFoundException;
+use App\Service\HashServiceInterface;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -98,25 +99,25 @@ class User implements UserInterface
         return $this->items;
     }
 
-    public function addItem(string $itemData): void
+    public function addItem(string $itemData, HashServiceInterface $hashService): void
     {
         $criteria = new Criteria();
         $criteria->andWhere(Criteria::expr()->eq('data', $itemData));
 
         if ($this->items()->matching($criteria)->isEmpty()) {
-            $this->items()->add(Item::createFromData($this, $itemData));
+            $this->items()->add(Item::createFromData($this, $itemData, $hashService));
             $this->updatedAt = new DateTimeImmutable('now');
         }
     }
 
-    public function updateItem(int $id, string $data): void
+    public function updateItem(int $id, string $data, HashServiceInterface $hashService): void
     {
         $criteria = new Criteria();
         $criteria->andWhere(Criteria::expr()->eq('id', $id));
         $items = $this->items()->matching($criteria);
 
         foreach($items as $item) {
-            $item->changeData($data);
+            $item->changeData($data, $hashService);
             $this->updatedAt = new DateTimeImmutable('now');
             return;
         }

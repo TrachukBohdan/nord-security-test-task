@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Service\HashServiceInterface;
 use DateTimeInterface;
 use DateTimeImmutable;
 
@@ -34,11 +35,11 @@ class Item
 
     private function __construct() {}
 
-    public static function createFromData(User $user, string $data): self
+    public static function createFromData(User $user, string $data, HashServiceInterface $hashService): self
     {
         $item = new Item();
         $item->user = $user;
-        $item->data = $data;
+        $item->changeData($data, $hashService);
         $item->createdAt = new DateTimeImmutable('now');
         $item->updatedAt = new DateTimeImmutable('now');
         return $item;
@@ -49,7 +50,7 @@ class Item
         return $this->id;
     }
 
-    public function data(): ?string
+    public function data(): string
     {
         return $this->data;
     }
@@ -59,9 +60,9 @@ class Item
         return $this->user;
     }
 
-    public function changeData(string $data): void
+    public function changeData(string $data, HashServiceInterface $hashService): void
     {
-        $this->data = $data;
+        $this->data = $hashService->encode($data);
         $this->updatedAt = new DateTimeImmutable('now');
     }
 

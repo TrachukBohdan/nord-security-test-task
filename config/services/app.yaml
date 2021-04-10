@@ -14,7 +14,14 @@ services:
     arguments:
       - '@App\Repository\UserRepository'
       - '@Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface'
+      - '@App\Service\HashService'
 
+  App\Service\HashService:
+    arguments:
+      - '%env(string:HASH_KEY)%'
+      - '%env(string:HASH_IV)%'
+
+  App\Service\HashServiceInterface: '@App\Service\HashService'
   App\Repository\UserRepositoryInterface: '@App\Repository\UserRepository'
   App\Repository\ItemRepositoryInterface: '@App\Repository\ItemRepository'
   App\Service\ItemServiceInterface: '@App\Service\ItemService'

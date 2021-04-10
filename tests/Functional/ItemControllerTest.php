@@ -15,8 +15,6 @@ class ItemControllerTest extends WebTestCase
         $client = static::createClient();
 
         $userRepository = static::$container->get(UserRepository::class);
-        //$itemRepository = static::$container->get(ItemRepository::class);
-        //$entityManager = static::$container->get(EntityManagerInterface::class);
 
         $user = $userRepository->findOneByUsername('john');
 
@@ -31,8 +29,5 @@ class ItemControllerTest extends WebTestCase
 
         $this->assertResponseIsSuccessful();
         $this->assertStringContainsString('very secure new item data', $client->getResponse()->getContent());
-
-        // there is no assertions after findOneByData so I commented it out
-        // $userRepository->findOneByData($data);
     }
 }

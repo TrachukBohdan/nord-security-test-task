@@ -9,6 +9,7 @@ use App\Exception\ItemNotFoundException;
 use App\Exception\UserNotFoundException;
 use App\Repository\ItemRepositoryInterface;
 use App\Repository\UserRepositoryInterface;
+use App\Service\HashServiceInterface;
 use App\Service\ItemService;
 use App\Service\ItemServiceInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,13 +29,14 @@ class ItemController extends AbstractController
     public function list(
         UserRepositoryInterface $userRepository,
         ItemRepositoryInterface $itemRepository,
-        ItemToArrayAdapter $itemToArrayAdapter
+        ItemToArrayAdapter $itemToArrayAdapter,
+        HashServiceInterface $hashService
     ): JsonResponse
     {
        try {
             $user = $userRepository->getByUsername($this->getUser()->getUsername());
             $items = $itemRepository->findAllItems($user);
-            return $this->json($itemToArrayAdapter->transformItems($items));
+            return $this->json($itemToArrayAdapter->transformItems($items, $hashService));
        } catch (UserNotFoundException $userNotFoundException) {
            return $this->json(['error' => 'user not found'], Response::HTTP_INTERNAL_SERVER_ERROR);
        } catch (\Throwable $exception) {
