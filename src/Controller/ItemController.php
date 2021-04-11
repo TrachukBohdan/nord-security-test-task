@@ -38,7 +38,7 @@ class ItemController extends AbstractController
             $items = $itemRepository->findAllItems($user);
             return $this->json($itemToArrayAdapter->transformItems($items, $hashService));
        } catch (UserNotFoundException $userNotFoundException) {
-           return $this->json(['error' => 'user not found'], Response::HTTP_INTERNAL_SERVER_ERROR);
+           return $this->json(['error' => 'user not found'], Response::HTTP_BAD_REQUEST);
        } catch (\Throwable $exception) {
            return $this->json(['error' => 'failed'], Response::HTTP_INTERNAL_SERVER_ERROR);
        }
@@ -64,7 +64,7 @@ class ItemController extends AbstractController
             $itemService->create($user->id(), (string) $data);
             return $this->json([]);
         } catch (UserNotFoundException $userNotFoundException) {
-            return $this->json(['error' => 'user not found'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(['error' => 'user not found'], Response::HTTP_BAD_REQUEST);
         } catch (Throwable $exception) {
             return $this->json(['error' => 'failed'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -96,7 +96,7 @@ class ItemController extends AbstractController
             );
             return $this->json([]);
         } catch (UserNotFoundException $userNotFoundException) {
-            return $this->json(['error' => 'user not found'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(['error' => 'user not found'], Response::HTTP_BAD_REQUEST);
         } catch (ItemNotFoundException $itemNotFoundException) {
             return $this->json(['error' => 'item not found'], Response::HTTP_BAD_REQUEST);
         } catch (Throwable $throwable) {
@@ -123,9 +123,9 @@ class ItemController extends AbstractController
             $itemService->remove($user->id(), (int) $id);
             return $this->json([]);
         } catch (UserNotFoundException $userNotFoundException) {
-            return $this->json(['error' => 'user not found'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(['error' => 'user not found'], Response::HTTP_BAD_REQUEST);
         } catch (ItemNotFoundException $itemNotFoundException) {
-            return $this->json(['error' => 'no item'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(['error' => 'no item'], Response::HTTP_BAD_REQUEST);
         } catch (Throwable $throwable) {
             return $this->json(['error' => 'failed'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
